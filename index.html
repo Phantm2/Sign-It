@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SIGN IT — Break the Barriers, Connect the World!</title>
+
+  <!-- MediaPipe Hands Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --accent: #f59e0b;
+      --success: #16a34a;
+      --error: #dc2626;
+      --sdg10: #e01483;
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #475569;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      text-align: center;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      transition: background-color 0.25s ease;
+    }
+
+    body.bg-green {
+      background-color: var(--success) !important;
+      color: #ffffff !important;
+    }
+
+    body.bg-red {
+      background-color: var(--error) !important;
+      color: #ffffff !important;
+    }
+
+    .topbar {
+      position: fixed;
+      top: 12px;
+      right: 16px;
+      left: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    .topbar-group {
+      display: flex;
+      gap: 0.5rem;
+      pointer-events: auto;
+    }
+
+    .nav-btn {
+      background: rgba(255, 255, 255, 0.92);
+      color: var(--text);
+      border: 2px solid #cbd5e1;
+      padding: 0.45rem 1rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      border-radius: 999px;
+      cursor: pointer;
+      margin: 0;
+      box-shadow: 0 3px 8px rgba(15, 23, 42, 0.08);
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+
+    .nav-btn:hover:not(:disabled) {
+      border-color: var(--primary);
+      background: #ffffff;
+      transform: scale(1.03);
+    }
+
+    .screen {
+      display: none;
+      min-height: 100vh;
+      padding: 4.25rem 1.75rem 2.25rem;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .screen.active {
+      display: flex;
+      animation: fadeIn 0.25s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .slogan-pill {
+      display: inline-block;
+      background: #dbeafe;
+      color: var(--primary-dark);
+      font-weight: 800;
+      font-size: 0.95rem;
+      letter-spacing: 0.04em;
+      padding: 0.45rem 1.1rem;
+      border-radius: 999px;
+      margin-bottom: 0.85rem;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 4.5vw, 3.4rem);
+      margin: 0 0 0.65rem;
+      color: var(--primary);
+    }
+
+    h2 {
+      font-size: clamp(1.2rem, 2.4vw, 1.9rem);
+      margin: 0 0 1.25rem;
+      font-weight: 500;
+    }
+
+    body.bg-green h1,
+    body.bg-green h2,
+    body.bg-red h1,
+    body.bg-red h2 {
+      color: #ffffff;
+    }
+
+    .huge-letter {
+      font-size: clamp(4.5rem, 10vw, 7.5rem);
+      font-weight: 800;
+      margin: 0.4rem 0 1rem;
+      color: var(--primary);
+      line-height: 1.05;
+    }
+
+    .name-badge-strip {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .letter-chip {
+      padding: 0.35rem 0.75rem;
+      border-radius: 10px;
+      background: #e2e8f0;
+      color: var(--text);
+      font-weight: 800;
+      font-size: 1.25rem;
+    }
+
+    .letter-chip.active-chip {
+      background: var(--primary);
+      color: #ffffff;
+      transform: scale(1.08);
+    }
+
+    body.bg-green .huge-letter,
+    body.bg-red .huge-letter {
+      color: #ffffff;
+    }
+
+    .action-btn {
+      background-color: var(--primary);
+      color: #ffffff;
+      border: none;
+      padding: 0.95rem 2.25rem;
+      font-size: 1.25rem;
+      font-weight: 700;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: transform 0.15s ease, background-color 0.15s ease;
+      margin: 0.5rem;
+      box-shadow: 0 6px 14px rgba(15, 23, 42, 0.12);
+    }
+
+    .action-btn:hover:not(:disabled) {
+      transform: scale(1.04);
+      background-color: var(--primary-dark);
+    }
+
+    .action-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    input[type="text"] {
+      padding: 0.95rem 1.25rem;
+      font-size: 1.4rem;
+      border-radius: 12px;
+      border: 2px solid var(--primary);
+      width: min(350px, 85vw);
+      text-align: center;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+      outline: none;
+    }
+
+    .game-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.75rem;
+      width: 100%;
+      max-width: 1200px;
+      align-items: stretch;
+    }
+
+    .webcam-section {
+      flex: 1 1 420px;
+      background: #090d16;
+      border-radius: 16px;
+      overflow: hidden;
+      position: relative;
+      min-height: 320px;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
+    }
+
+    video,
+    canvas {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+    }
+
+    .camera-badge {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      background: rgba(15, 23, 42, 0.78);
+      color: #f8fafc;
+      padding: 0.4rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      z-index: 2;
+    }
+
+    .options-section {
+      flex: 1 1 420px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(140px, 1fr));
+      gap: 1rem;
+    }
+
+    .option-card {
+      background: var(--card);
+      color: var(--text);
+      border: 3px solid #cbd5e1;
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+      min-height: 170px;
+      font-weight: 700;
+      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
+    }
+
+    .option-card:hover {
+      border-color: var(--primary);
+      background-color: #eff6ff;
+      transform: translateY(-2px);
+    }
+
+    .option-card img {
+      max-width: 110px;
+      max-height: 110px;
+      object-fit: contain;
+      margin-bottom: 0.5rem;
+    }
+
+    .card-letter {
+      font-size: 1.9rem;
+      color: var(--primary);
+    }
+
+    .card-sub {
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .report-box {
+      font-size: 1.2rem;
+      text-align: left;
+      background: var(--card);
+      color: var(--text);
+      padding: 1.75rem 2rem;
+      border-radius: 16px;
+      max-width: 600px;
+      width: 100%;
+      margin: 0.75rem 0 1.25rem;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+    }
+
+    .report-box p {
+      margin: 0.55rem 0;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 16px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 0.4rem 0 1rem;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--primary), var(--success));
+      transition: width 0.4s ease;
+    }
+
+    .sdg-badge {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 116px;
+      height: 116px;
+      border-radius: 18px;
+      background: var(--sdg10);
+      color: #ffffff;
+      font-weight: 800;
+      box-shadow: 0 8px 18px rgba(224, 20, 131, 0.28);
+      margin-bottom: 0.75rem;
+    }
+
+    .sdg-badge span:first-child {
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      opacity: 0.92;
+    }
+
+    .sdg-badge span:nth-child(2) {
+      font-size: 2.4rem;
+      line-height: 1.05;
+    }
+
+    .sdg-badge span:last-child {
+      font-size: 0.72rem;
+      letter-spacing: 0.04em;
+    }
+
+    .sdg-text {
+      font-size: 1.15rem;
+      max-width: 820px;
+      margin: 0.5rem auto 1.35rem;
+      line-height: 1.65;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Controls -->
+  <div class="topbar">
+    <div class="topbar-group">
+      <button type="button" class="nav-btn" onclick="goHome()">Home</button>
+      <button type="button" class="nav-btn" onclick="restartCurrentVisitor()">Restart</button>
+    </div>
+    <div class="topbar-group">
+      <button type="button" class="nav-btn" id="soundToggleBtn" onclick="toggleSound()">Sound: ON</button>
+    </div>
+  </div>
+
+  <!-- 1. Welcome Page -->
+  <div id="welcome-screen" class="screen active">
+    <div class="slogan-pill">DON'T JUST HEAR ABOUT INCLUSION. LEARN TO SIGN IT!</div>
+    <h1>SIGN IT — Break the Barriers, Connect the World!</h1>
+    <h2>A small gesture can make a big difference.</h2>
+    <p class="sdg-text">
+      Welcome to our interactive Indian Sign Language (ISL) exhibition experience. Discover how people with hearing
+      and speech disabilities communicate every day, practise ISL alphabet gestures on camera, and see how learning
+      sign language supports <strong>UN SDG 10 – Reduced Inequalities</strong>.
+    </p>
+    <button type="button" class="action-btn" onclick="showScreen('name-screen')">START PLAYING</button>
+  </div>
+
+  <!-- 2. Enter Name -->
+  <div id="name-screen" class="screen">
+    <h1>What is your name?</h1>
+    <p class="sdg-text" style="margin-bottom: 1rem;">
+      Stall volunteer: enter the visitor's name to begin the letter-by-letter ISL challenge.
+    </p>
+    <input
+      type="text"
+      id="playerName"
+      placeholder="Enter name (e.g. DIVYA)"
+      maxlength="14"
+      onkeydown="if (event.key === 'Enter') startGame();"
+    />
+    <div>
+      <button type="button" class="action-btn" onclick="startGame()">Continue</button>
+    </div>
+  </div>
+
+  <!-- 3 & 4. Learning & Feedback Phase -->
+  <div id="learn-screen" class="screen">
+    <div class="name-badge-strip" id="learn-name-strip"></div>
+    <h2 id="learning-instruction">Perform the ISL sign for:</h2>
+    <div class="huge-letter" id="current-letter">A</div>
+
+    <div class="game-container">
+      <div class="webcam-section">
+        <video id="videoElement" autoplay playsinline></video>
+        <canvas id="outputCanvas"></canvas>
+        <div class="camera-badge" id="cameraStatus">Starting hand tracker...</div>
+      </div>
+
+      <div class="options-section" id="options-container">
+        <!-- 4 randomized ISL gesture cards injected via JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Final Challenge -->
+  <div id="final-screen" class="screen">
+    <h1>YOU DID IT! NOW IT'S TIME FOR THE FINAL CHALLENGE!</h1>
+    <div class="name-badge-strip" id="final-name-strip"></div>
+    <p class="sdg-text" style="margin-bottom: 0.5rem;">
+      Perform all gestures in order, one after another, without options or hints!
+    </p>
+    <div id="final-progress" style="font-weight: 700; margin-bottom: 0.25rem;">Letter 1 of 1</div>
+    <div class="huge-letter" id="final-letter-display">A</div>
+    <div>
+      <button
+        type="button"
+        id="btn-correct"
+        class="action-btn"
+        onclick="recordFinalLetter(true)"
+        style="background-color: var(--success);"
+      >
+        Volunteer: Mark Correct
+      </button>
+      <button
+        type="button"
+        id="btn-incorrect"
+        class="action-btn"
+        onclick="recordFinalLetter(false)"
+        style="background-color: var(--error);"
+      >
+        Volunteer: Mark Incorrect
+      </button>
+    </div>
+  </div>
+
+  <!-- 6. Improvement Report -->
+  <div id="report-screen" class="screen">
+    <h1>Personalised Progress Report</h1>
+    <h2 id="report-name">Visitor: </h2>
+    <div class="report-box">
+      <p><strong>Letters Practised:</strong> <span id="rep-letters"></span></p>
+      <p><strong>Correct Attempts During Learning:</strong> <span id="rep-learn-correct"></span></p>
+      <p><strong>First-Try Learning Accuracy:</strong> <span id="rep-first-try"></span></p>
+      <p><strong>Final Challenge Score:</strong> <span id="rep-score"></span></p>
+      <p><strong>Final Challenge Accuracy:</strong> <span id="rep-accuracy"></span></p>
+
+      <div class="progress-track" aria-hidden="true">
+        <div class="progress-fill" id="rep-progress-bar"></div>
+      </div>
+
+      <p><strong>Learning Progress Summary:</strong> <span id="rep-improvement"></span></p>
+      <p id="rep-encouragement" style="color: var(--success); font-weight: 700; margin-top: 1rem;"></p>
+    </div>
+    <button type="button" class="action-btn" onclick="showScreen('sdg-screen')">Next: SDG 10 Impact</button>
+  </div>
+
+  <!-- 7. SDG 10 Connection -->
+  <div id="sdg-screen" class="screen">
+    <div class="sdg-badge" aria-label="UN SDG Goal 10 Reduced Inequalities">
+      <span>SDG GOAL</span>
+      <span>10</span>
+      <span>INEQUALITIES</span>
+    </div>
+    <h1>HOW DID YOU HELP REDUCE INEQUALITY?</h1>
+    <p class="sdg-text">
+      Imagine living in a world where communicating with others is difficult because people don't understand your
+      language. This is a reality for many people who use sign language. By learning even a few sign-language
+      gestures, you have taken a small step towards making communication more inclusive. This activity supports
+      <strong>UN Sustainable Development Goal 10 – REDUCED INEQUALITIES</strong> – because it encourages equal
+      opportunities, understanding, accessibility and inclusion for people with hearing and speech disabilities.
+      <br /><br />
+      <strong>Remember: Inclusion begins when we make an effort to understand one another!</strong>
+    </p>
+    <div>
+      <button type="button" class="action-btn" onclick="restartCurrentVisitor()">Play Again</button>
+      <button type="button" class="action-btn" onclick="goHome()" style="background-color: var(--muted);">Home</button>
+    </div>
+  </div>
+
+  <script>
+    // Set to true once you place A.jpg ... Z.jpg inside an "images/" folder
+    const USE_CUSTOM_IMAGES = true;
+
+    let playerName = "";
+    let currentLetterIndex = 0;
+    let currentLetterAttempts = 0;
+    let firstTryCorrectCount = 0;
+    let totalLearningAttempts = 0;
+    let mistakes = 0;
+    let isTransitioning = false;
+
+    let finalIndex = 0;
+    let finalCorrectCount = 0;
+
+    let webcamStarted = false;
+    let soundEnabled = true;
+    let audioCtx = null;
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      document.getElementById('soundToggleBtn').textContent = `Sound: ${soundEnabled ? 'ON' : 'OFF'}`;
+    }
+
+    function playTone(isGood) {
+      if (!soundEnabled) return;
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = isGood ? 'triangle' : 'sawtooth';
+
+        if (isGood) {
+          osc.frequency.setValueAtTime(523.25, now); // C5
+          osc.frequency.setValueAtTime(659.25, now + 0.12); // E5
+          gain.gain.setValueAtTime(0.14, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.34);
+        } else {
+          osc.frequency.setValueAtTime(240, now);
+          osc.frequency.linearRampToValueAtTime(175, now + 0.24);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.28);
+        }
+      } catch (_) {
+        // Ignore audio errors if blocked by browser policy
+      }
+    }
+
+    function showScreen(screenId) {
+      document.body.classList.remove('bg-green', 'bg-red');
+      document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active'));
+      document.getElementById(screenId).classList.add('active');
+    }
+
+    function goHome() {
+      showScreen('welcome-screen');
+    }
+
+    function restartCurrentVisitor() {
+      if (playerName) {
+        beginSessionForName(playerName);
+      } else {
+        showScreen('name-screen');
+      }
+    }
+
+    function startGame() {
+      const raw = document.getElementById('playerName').value.toUpperCase().replace(/[^A-Z]/g, '');
+      if (!raw.length) {
+        alert("Please enter a visitor's name using letters A–Z.");
+        return;
+      }
+      beginSessionForName(raw);
+    }
+
+    function beginSessionForName(cleanName) {
+      playerName = cleanName;
+      currentLetterIndex = 0;
+      currentLetterAttempts = 0;
+      firstTryCorrectCount = 0;
+      totalLearningAttempts = 0;
+      mistakes = 0;
+      isTransitioning = false;
+      finalIndex = 0;
+      finalCorrectCount = 0;
+
+      showScreen('learn-screen');
+      loadLetter();
+
+      if (!webcamStarted) {
+        startWebcamAI();
+        webcamStarted = true;
+      }
+    }
+
+    function renderNameStrip(containerId, activeIdx) {
+      const strip = document.getElementById(containerId);
+      strip.innerHTML = "";
+      playerName.split('').forEach((ch, idx) => {
+        const chip = document.createElement('span');
+        chip.className = 'letter-chip' + (idx === activeIdx ? ' active-chip' : '');
+        chip.textContent = ch;
+        strip.appendChild(chip);
+      });
+    }
+
+    function createCardContent(letter) {
+      const wrapper = document.createElement('div');
+      wrapper.style.display = 'flex';
+      wrapper.style.flexDirection = 'column';
+      wrapper.style.alignItems = 'center';
+
+      if (USE_CUSTOM_IMAGES) {
+        const img = document.createElement('img');
+        img.src = `images/${letter}.jpg`;
+        img.alt = `ISL sign for ${letter}`;
+        img.onerror = () => {
+          img.style.display = 'none';
+        };
+        wrapper.appendChild(img);
+      } else {
+        wrapper.innerHTML = `
+          <svg width="68" height="68" viewBox="0 0 64 64" aria-hidden="true" style="margin-bottom: 6px;">
+            <rect x="18" y="24" width="28" height="28" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="3"/>
+            <line x1="22" y1="24" x2="22" y2="10" stroke="#2563eb" stroke-width="4" stroke-linecap="round"/>
+            <line x1="29" y1="24" x2="29" y2="8" stroke="#2563eb" stroke-width="4" stroke-linecap="round"/>
+            <line x1="36" y1="24" x2="36" y2="10" stroke="#2563eb" stroke-width="4" stroke-linecap="round"/>
+            <line x1="42" y1="24" x2="42" y2="14" stroke="#2563eb" stroke-width="4" stroke-linecap="round"/>
+          </svg>
+        `;
+      }
+
+      const title = document.createElement('span');
+      title.className = 'card-letter';
+      title.textContent = `ISL: ${letter}`;
+
+      const sub = document.createElement('span');
+      sub.className = 'card-sub';
+      sub.textContent = 'Volunteer Select';
+
+      wrapper.appendChild(title);
+      wrapper.appendChild(sub);
+      return wrapper;
+    }
+
+    function loadLetter() {
+      if (currentLetterIndex >= playerName.length) {
+        startFinalChallenge();
+        return;
+      }
+
+      isTransitioning = false;
+      currentLetterAttempts = 0;
+      const targetLetter = playerName[currentLetterIndex];
+
+      renderNameStrip('learn-name-strip', currentLetterIndex);
+      document.getElementById('learning-instruction').textContent =
+        `Show the ISL gesture for (${currentLetterIndex + 1} of ${playerName.length}):`;
+      document.getElementById('current-letter').textContent = targetLetter;
+      document.body.classList.remove('bg-green', 'bg-red');
+
+      // Strictly 1 correct option + 3 distinct distractors, shuffled
+      const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".replace(targetLetter, "").split("");
+      const choices = [targetLetter];
+
+      while (choices.length < 4 && alphabet.length > 0) {
+        const randIdx = Math.floor(Math.random() * alphabet.length);
+        choices.push(alphabet.splice(randIdx, 1)[0]);
+      }
+      choices.sort(() => Math.random() - 0.5);
+
+      const container = document.getElementById('options-container');
+      container.innerHTML = "";
+
+      choices.forEach((opt) => {
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'option-card';
+        card.appendChild(createCardContent(opt));
+        card.onclick = () => checkAnswer(opt === targetLetter);
+        container.appendChild(card);
+      });
+    }
+
+    function checkAnswer(isCorrect) {
+      if (isTransitioning) return;
+      isTransitioning = true;
+      currentLetterAttempts++;
+      totalLearningAttempts++;
+
+      const letterEl = document.getElementById('current-letter');
+      const currentTarget = playerName[currentLetterIndex];
+
+      if (isCorrect) {
+        if (currentLetterAttempts === 1) {
+          firstTryCorrectCount++;
+        }
+        playTone(true);
+        document.body.classList.remove('bg-red');
+        document.body.classList.add('bg-green');
+        letterEl.textContent = "CORRECT! AMAZING JOB!";
+        setTimeout(() => {
+          currentLetterIndex++;
+          loadLetter();
+        }, 1250);
+      } else {
+        mistakes++;
+        playTone(false);
+        document.body.classList.remove('bg-green');
+        document.body.classList.add('bg-red');
+        letterEl.textContent = "NOT QUITE! TRY AGAIN!";
+        setTimeout(() => {
+          document.body.classList.remove('bg-red');
+          letterEl.textContent = currentTarget;
+          isTransitioning = false;
+        }, 1250);
+      }
+    }
+
+    function startFinalChallenge() {
+      finalIndex = 0;
+      finalCorrectCount = 0;
+      showScreen('final-screen');
+      renderFinalStep();
+    }
+
+    function renderFinalStep() {
+      if (finalIndex >= playerName.length) {
+        showReport();
+        return;
+      }
+      renderNameStrip('final-name-strip', finalIndex);
+      document.getElementById('final-progress').textContent =
+        `Letter ${finalIndex + 1} of ${playerName.length}`;
+      document.getElementById('final-letter-display').textContent = playerName[finalIndex];
+    }
+
+    function recordFinalLetter(isCorrect) {
+      if (isCorrect) {
+        finalCorrectCount++;
+        playTone(true);
+      } else {
+        playTone(false);
+      }
+      finalIndex++;
+      renderFinalStep();
+    }
+
+    function showReport() {
+      showScreen('report-screen');
+      const total = playerName.length;
+      const firstTryPct = Math.round((firstTryCorrectCount / total) * 100);
+      const finalPct = Math.round((finalCorrectCount / total) * 100);
+      const delta = finalPct - firstTryPct;
+
+      document.getElementById('report-name').textContent = `Visitor: ${playerName}`;
+      document.getElementById('rep-letters').textContent = `${total} (${playerName.split('').join(', ')})`;
+      document.getElementById('rep-learn-correct').textContent = `${total} letters completed (${totalLearningAttempts} total tries)`;
+      document.getElementById('rep-first-try').textContent = `${firstTryPct}% (${firstTryCorrectCount}/${total} on first try)`;
+      document.getElementById('rep-score').textContent = `${finalCorrectCount} / ${total}`;
+      document.getElementById('rep-accuracy').textContent = `${finalPct}%`;
+
+      document.getElementById('rep-progress-bar').style.width = `${finalPct}%`;
+
+      let improvementText = "";
+      if (delta > 0) {
+        improvementText = `+${delta}% improvement from first-try learning (${firstTryPct}%) to final test (${finalPct}%).`;
+      } else if (delta === 0) {
+        improvementText = `Consistent ${finalPct}% accuracy across first-try learning and the final challenge.`;
+      } else {
+        improvementText = `First-try learning was ${firstTryPct}% and final test accuracy was ${finalPct}% (${delta}% vs. initial attempts).`;
+      }
+      document.getElementById('rep-improvement').textContent = improvementText;
+
+      const msg = document.getElementById('rep-encouragement');
+      if (finalPct >= 80) {
+        msg.textContent = `Amazing work, ${playerName}! You mastered your ISL signs in record time.`;
+      } else if (finalPct >= 50) {
+        msg.textContent = `Great job, ${playerName}! Every gesture helps build a more inclusive world.`;
+      } else {
+        msg.textContent = `Good effort, ${playerName}! Keep practising—every sign learned breaks a barrier.`;
+      }
+    }
+
+    // MediaPipe Hands Setup
+    const videoElement = document.getElementById('videoElement');
+    const canvasElement = document.getElementById('outputCanvas');
+    const canvasCtx = canvasElement.getContext('2d');
+    const statusBadge = document.getElementById('cameraStatus');
+
+    function onResults(results) {
+      if (videoElement.videoWidth && videoElement.videoHeight) {
+        canvasElement.width = videoElement.videoWidth;
+        canvasElement.height = videoElement.videoHeight;
+      }
+
+      canvasCtx.save();
+      canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+      canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+      const handCount = results.multiHandLandmarks ? results.multiHandLandmarks.length : 0;
+      statusBadge.textContent = handCount > 0
+        ? `Hand landmarks active (${handCount} hand${handCount > 1 ? 's' : ''})`
+        : "Show your hand to the camera";
+
+      if (results.multiHandLandmarks) {
+        for (const landmarks of results.multiHandLandmarks) {
+          drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {
+            color: '#22c55e',
+            lineWidth: 4
+          });
+          drawLandmarks(canvasCtx, landmarks, {
+            color: '#ef4444',
+            lineWidth: 2,
+            radius: 4
+          });
+        }
+      }
+
+      canvasCtx.restore();
+    }
+
+    const hands = new Hands({
+      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+    });
+
+    hands.setOptions({
+      maxNumHands: 2,
+      modelComplexity: 1,
+      minDetectionConfidence: 0.6,
+      minTrackingConfidence: 0.5
+    });
+
+    hands.onResults(onResults);
+
+    function startWebcamAI() {
+      const camera = new Camera(videoElement, {
+        onFrame: async () => {
+          await hands.send({ image: videoElement });
+        },
+        width: 640,
+        height: 480
+      });
+      camera.start().catch(() => {
+        statusBadge.textContent = "Camera access blocked or unavailable";
+      });
+    }
+  </script>
+</body>
+</html>
